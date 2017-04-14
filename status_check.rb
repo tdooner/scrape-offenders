@@ -12,11 +12,10 @@ def throttle(failed = false)
   sleep 0.1
 end
 
-$stdout.sync = false
-
-scraper = Mechanize.new
+$stdout.sync = true
 
 begin
+  scraper = Mechanize.new
   scraper.get('http://docpub.state.or.us/OOS/intro.jsf') do |page|
     search_page = scraper.click 'I Agree'
 
