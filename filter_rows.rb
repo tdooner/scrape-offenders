@@ -7,7 +7,10 @@ sids = Set.new
 
 File.open(ARGV[0], 'r') do |f|
   f.each_line do |line|
-    sids << JSON.parse(line)['sid']
+    sid = JSON.parse(line)['sid']
+    next if sid == nil || sid == ''
+
+    sids << sid
   end
 end
 
