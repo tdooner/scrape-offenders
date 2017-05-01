@@ -2,7 +2,8 @@
 # the first argument can be prior output of this script, in which case the
 #   stuff in that file will be skipped
 
-require 'mechanize'
+$LOAD_PATH.unshift File.expand_path('~/dev/cfa/oos-mechanizer/lib')
+require 'oos_mechanizer'
 require 'json'
 
 def throttle(failed = false)
@@ -15,36 +16,15 @@ end
 $stdout.sync = true
 
 begin
-  scraper = Mechanize.new
-  scraper.get('http://docpub.state.or.us/OOS/intro.jsf') do |page|
-    search_page = scraper.click 'I Agree'
-
-    # ['10042337'].each do |sid|
-    $stdin.each_line do |sid|
-      results_page = search_page.form_with(id: 'mainBodyForm') do |f|
-        f['mainBodyForm:SidNumber'] = sid.strip
-      end.click_button
-
-      offenses = results_page.css('[id="offensesForm:offensesTable"] tbody tr:nth-child(2n+1)')
-
-      $stdout.puts(JSON.generate(
-        sid: results_page.css('[id="offensesForm:out_SID"]').text,
-        age: results_page.css('[id="offensesForm:age"]').text,
-        gender: results_page.css('[id="offensesForm:sex"]').text,
-        # todo all the other fields
-        caseload_number: results_page.css('[id="offensesForm:caseloadNumber"]').text,
-        caseload_name: results_page.css('[id="offensesForm:caseloadMgrsTable"]').text.strip,
-        status: results_page.css('[id="offensesForm:status"]').text,
-        location: results_page.css('[id="offensesForm:locationBlock"] a').text,
-        admission_date: results_page.css('[id="offensesForm:admitDate"]').text,
-        earliest_release_date: results_page.css('[id="offensesForm:relDate"]').text,
-        offenses: offenses.map {|o| o.text.strip.gsub(/\s+/, ',') },
-        num_offenses: offenses.length,
-      ))
-
-      throttle
-    end
+  searcher = OosMechanizer::Searcher.new
+  $stdin.each_line do |sid|
+    throttle
+    $stdout.puts(JSON.generate(searcher.offender_details(sid)))
   end
+rescue OosMechanizer::Searcher::ConnectionFailed => ex
+  $stderr.puts "Error connecting to OOS: #{ex.message}"
+  throttle(true)
+  retry
 rescue Mechanize::ResponseCodeError => ex
   $stderr.puts "Got Mechanize Error: #{ex.message}"
   throttle(true)
