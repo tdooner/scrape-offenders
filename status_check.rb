@@ -19,7 +19,12 @@ begin
   searcher = OosMechanizer::Searcher.new
   $stdin.each_line do |sid|
     throttle
-    $stdout.puts(JSON.generate(searcher.offender_details(sid.strip)))
+    details = searcher.offender_details(sid.strip)
+    if details.nil?
+      $stdout.puts(JSON.generate(sid: sid))
+    else
+      $stdout.puts(JSON.generate(details))
+    end
   end
 rescue OosMechanizer::Searcher::ConnectionFailed => ex
   $stderr.puts "Error connecting to OOS: #{ex.message}"
